@@ -64,7 +64,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
                     .setDirection(DIR_INPUT_ONLY)
                     .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
                     .build());
-this.startButton.setInputListener(this);
+            this.startButton.setInputListener(this);
 
             this.redButton = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
                     .setPinNumber(11)
@@ -138,7 +138,7 @@ this.startButton.setInputListener(this);
             while (this.sequenceCorrect) {
                 this.addNewColorToSequence();
                 this.playCurrentSequence();
-                this.playerSequencePlayback();
+                this.playerSequenceInput();
             }
         } catch (IOException ioe) {
             ioe.printStackTrace();
@@ -181,7 +181,13 @@ this.startButton.setInputListener(this);
         }
     }
 
-    private void playerSequencePlayback() {
-        //ODO: 
+    /**
+     * waits for a player to repeat the sequence
+     */
+    private void playerSequenceInput() {
+        System.out.println("Waiting for player input:");
+        
+        
+        
     }
 }
