@@ -26,23 +26,30 @@ import jdk.dio.gpio.PinListener;
  */
 public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
 
-    List<ColorButton> patternSequence = new ArrayList<>();
-    List<GPIOPin> leds = new ArrayList<>();
+    private List<ColorButton> patternSequence = new ArrayList<>();
+    private List<GPIOPin> leds = new ArrayList<>();
 
-    GPIOPin redLed;
-    GPIOPin redButton;
+    /**
+     * Indicates which color in the current sequence the user has correctly
+     * guessed, starting at zero. If 0, player is guessing the first color, if
+     * 1, player is guessing the second color, etc.
+     *
+     */
+    private int currentPlayerColorCount;
+    private GPIOPin redLed;
+    private GPIOPin redButton;
 
-    GPIOPin greenLed;
-    GPIOPin greenButton;
+    private GPIOPin greenLed;
+    private GPIOPin greenButton;
 
-    GPIOPin blueLed;
-    GPIOPin blueButton;
+    private GPIOPin blueLed;
+    private GPIOPin blueButton;
 
-    GPIOPin yellowLed;
-    GPIOPin yellowButton;
-    GPIOPin startButton;
+    private GPIOPin yellowLed;
+    private GPIOPin yellowButton;
+    private GPIOPin startButton;
 
-    Random randomColor = new Random();
+    private Random randomColor = new Random();
 
     /**
      * Initial delay between colors
@@ -52,6 +59,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
 
     private int currentScore = 0;
     private boolean sequenceCorrect = true;
+    private boolean waitingForPlayerInput = false;
 
     /**
      * Defines GPIO pins and buttons for game
@@ -71,6 +79,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
                     .setDirection(DIR_INPUT_ONLY)
                     .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
                     .build());
+            this.redButton.setInputListener(this);
             this.redLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
                     .setPinNumber(12)
                     .setDirection(DIR_OUTPUT_ONLY)
@@ -81,6 +90,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
                     .setDirection(DIR_INPUT_ONLY)
                     .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
                     .build());
+            this.greenButton.setInputListener(this);
             this.greenLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
                     .setPinNumber(16)
                     .setDirection(DIR_OUTPUT_ONLY)
@@ -91,6 +101,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
                     .setDirection(DIR_INPUT_ONLY)
                     .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
                     .build());
+            this.blueButton.setInputListener(this);
             this.blueLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
                     .setPinNumber(32)
                     .setDirection(DIR_OUTPUT_ONLY)
@@ -101,6 +112,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
                     .setDirection(DIR_INPUT_ONLY)
                     .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
                     .build());
+            this.yellowButton.setInputListener(this);
             this.yellowLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
                     .setPinNumber(36)
                     .setDirection(DIR_OUTPUT_ONLY)
@@ -125,20 +137,24 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
     private void startNewGame() {
         this.currentDelay = INITIAL_DELAY;
         this.currentScore = 0;
+        this.waitingForPlayerInput = false;
+        this.currentPlayerColorCount = 0;
 
-        this.gameLoop();
+        this.playNextGameSequence();
     }
 
     /**
-     * Loops game sequence until player gets a wrong color.
+     * Plays game sequence once and then waits for player input.
      */
-    private void gameLoop() {
+    private void playNextGameSequence() {
 
         try {
-            while (this.sequenceCorrect) {
-                this.addNewColorToSequence();
-                this.playCurrentSequence();
-                this.playerSequenceInput();
+            if (this.sequenceCorrect) {
+                if (!this.waitingForPlayerInput) {
+                    this.addNewColorToSequence();
+                    this.playCurrentSequence();
+                    this.playerSequenceInput();
+                }
             }
         } catch (IOException ioe) {
             ioe.printStackTrace();
@@ -147,6 +163,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
     }
 
     private void playCurrentSequence() throws IOException {
+        System.out.println("Playing current sequence: ");
         for (ColorButton color : this.patternSequence) {
             this.playLed(color);
         }
@@ -175,19 +192,50 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
 
     @Override
     public void valueChanged(PinEvent event) {
-
-        if (event.getDevice() == this.startButton) {
+        GPIOPin currentInput = event.getDevice();
+        if ( currentInput == this.startButton) {
             this.startNewGame();
+        } else //check player current turn input
+        if (this.waitingForPlayerInput) {
+            this.checkCurrentPlayerInput(event.getDevice());
         }
     }
 
     /**
-     * waits for a player to repeat the sequence
+     * Toggles game state to indicate waiting for player input
      */
     private void playerSequenceInput() {
         System.out.println("Waiting for player input:");
-        
-        
-        
+        this.waitingForPlayerInput = true;
+
+    }
+
+    private void checkCurrentPlayerInput(GPIOPin device) {
+
+        //get the current color in playback sequence
+        ColorButton currentColorInSequence = this.patternSequence.get(this.currentPlayerColorCount);
+
+        if ((currentColorInSequence == ColorButton.red && device != redButton)
+                || (currentColorInSequence == ColorButton.green && device != greenButton)
+                || (currentColorInSequence == ColorButton.blue && device != blueButton)
+                || (currentColorInSequence == ColorButton.yellow && device != yellowButton)) {
+            this.sequenceCorrect = false;
+            this.waitingForPlayerInput = false;
+        } else {
+            System.out.println("...correct!");
+
+            //advance to the next color in the current sequence to be checked
+            this.currentPlayerColorCount++;
+            this.sequenceCorrect = true;
+
+        }
+
+        //check if the player has entered all colors in sequence successfully
+        //and if so, advance to the next pattern
+        if (this.sequenceCorrect && this.currentPlayerColorCount > this.patternSequence.size()) {
+            this.currentPlayerColorCount = 0;
+            this.playNextGameSequence();
+        }
+
     }
 }
