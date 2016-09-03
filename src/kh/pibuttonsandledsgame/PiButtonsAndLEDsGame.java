@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.microedition.midlet.MIDlet;
+import jdk.dio.DeviceDescriptor;
 import jdk.dio.DeviceManager;
 import jdk.dio.gpio.GPIOPin;
 import jdk.dio.gpio.GPIOPinConfig;
@@ -138,8 +139,9 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
         this.currentDelay = INITIAL_DELAY;
         this.currentScore = 0;
         this.waitingForPlayerInput = false;
+        this.sequenceCorrect = true;
         this.currentPlayerColorCount = 0;
-
+        this.patternSequence = new ArrayList<>();
         this.playNextGameSequence();
     }
 
@@ -192,7 +194,13 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
 
     @Override
     public void valueChanged(PinEvent event) {
+        
+        //TODO can you get pin number from the api here, to help determine what was pressed?
+        
         GPIOPin currentInput = event.getDevice();
+        DeviceDescriptor device = currentInput.getDescriptor();
+        GPIOPinConfig config = (GPIOPinConfig)device.getConfiguration();
+        System.out.println("Button : " + config.getPinNumber() );
         if ( currentInput == this.startButton) {
             this.startNewGame();
         } else //check player current turn input
@@ -221,6 +229,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
                 || (currentColorInSequence == ColorButton.yellow && device != yellowButton)) {
             this.sequenceCorrect = false;
             this.waitingForPlayerInput = false;
+            System.out.println("...wrong!");
         } else {
             System.out.println("...correct!");
 
@@ -232,9 +241,14 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
 
         //check if the player has entered all colors in sequence successfully
         //and if so, advance to the next pattern
-        if (this.sequenceCorrect && this.currentPlayerColorCount > this.patternSequence.size()) {
+        if (this.sequenceCorrect && this.currentPlayerColorCount == this.patternSequence.size()) {
+            System.out.println("... sequence correct!");
+            this.waitingForPlayerInput = false;
             this.currentPlayerColorCount = 0;
             this.playNextGameSequence();
+        }
+        else{
+            System.out.println("... waiting for next input in sequence");
         }
 
     }
