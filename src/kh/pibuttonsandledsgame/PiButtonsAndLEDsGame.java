@@ -22,8 +22,10 @@ import jdk.dio.gpio.PinEvent;
 import jdk.dio.gpio.PinListener;
 
 /**
- *
- * @author kev
+ * Simple lights and buttons game to illustrate Java ME GPIO input
+ * and output.
+ * 
+ * @author kevinhooke
  */
 public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
 
@@ -55,7 +57,7 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
     /**
      * Initial delay between colors
      */
-    private static final int INITIAL_DELAY = 500;
+    private static final int INITIAL_DELAY = 2000;
     private int currentDelay;
 
     private int currentScore = 0;
@@ -69,53 +71,48 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
     public void startApp() {
         try {
             this.startButton = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(7)
+                    .setPinNumber(4)
                     .setDirection(DIR_INPUT_ONLY)
-                    .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
+                    .setTrigger(GPIOPinConfig.TRIGGER_FALLING_EDGE)
                     .build());
-            this.startButton.setInputListener(this);
 
             this.redButton = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(11)
+                    .setPinNumber(23)
                     .setDirection(DIR_INPUT_ONLY)
-                    .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
+                    .setTrigger(GPIOPinConfig.TRIGGER_FALLING_EDGE)
                     .build());
-            this.redButton.setInputListener(this);
             this.redLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(12)
+                    .setPinNumber(22)
                     .setDirection(DIR_OUTPUT_ONLY)
                     .build());
 
             this.greenButton = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(15)
+                    .setPinNumber(18)
                     .setDirection(DIR_INPUT_ONLY)
-                    .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
+                    .setTrigger(GPIOPinConfig.TRIGGER_FALLING_EDGE)
                     .build());
-            this.greenButton.setInputListener(this);
             this.greenLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(16)
+                    .setPinNumber(17)
                     .setDirection(DIR_OUTPUT_ONLY)
                     .build());
 
             this.blueButton = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(31)
+                    .setPinNumber(12)
                     .setDirection(DIR_INPUT_ONLY)
-                    .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
+                    .setTrigger(GPIOPinConfig.TRIGGER_FALLING_EDGE)
                     .build());
-            this.blueButton.setInputListener(this);
             this.blueLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(32)
+                    .setPinNumber(13)
                     .setDirection(DIR_OUTPUT_ONLY)
                     .build());
 
             this.yellowButton = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(35)
+                    .setPinNumber(16)
                     .setDirection(DIR_INPUT_ONLY)
-                    .setTrigger(GPIOPinConfig.TRIGGER_RISING_EDGE)
+                    .setTrigger(GPIOPinConfig.TRIGGER_FALLING_EDGE)
                     .build());
-            this.yellowButton.setInputListener(this);
             this.yellowLed = (GPIOPin) DeviceManager.open(new GPIOPinConfig.Builder()
-                    .setPinNumber(36)
+                    .setPinNumber(26)
                     .setDirection(DIR_OUTPUT_ONLY)
                     .build());
 
@@ -125,6 +122,15 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
             this.leds.add(this.blueLed);
             this.leds.add(this.yellowLed);
 
+            this.testLeds();
+            
+            //add listeners
+            this.startButton.setInputListener(this);
+            this.redButton.setInputListener(this);
+            this.greenButton.setInputListener(this);
+            this.blueButton.setInputListener(this);
+            this.yellowButton.setInputListener(this);
+            
         } catch (IOException ioe) {
             ioe.printStackTrace();
         }
@@ -145,6 +151,29 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
         this.playNextGameSequence();
     }
 
+    public void testLeds(){
+        try{
+        this.redLed.setValue(true);
+        Thread.sleep(600);
+        this.redLed.setValue(false);
+        
+        this.greenLed.setValue(true);
+        Thread.sleep(600);
+        this.greenLed.setValue(false);
+        
+        this.blueLed.setValue(true);
+        Thread.sleep(600);
+        this.blueLed.setValue(false);
+        
+        this.yellowLed.setValue(true);
+        Thread.sleep(600);
+        this.yellowLed.setValue(false);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+    
     /**
      * Plays game sequence once and then waits for player input.
      */
@@ -194,12 +223,10 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
 
     @Override
     public void valueChanged(PinEvent event) {
-        
-        //TODO can you get pin number from the api here, to help determine what was pressed?
-        
         GPIOPin currentInput = event.getDevice();
         DeviceDescriptor device = currentInput.getDescriptor();
         GPIOPinConfig config = (GPIOPinConfig)device.getConfiguration();
+
         System.out.println("Button : " + config.getPinNumber() );
         if ( currentInput == this.startButton) {
             this.startNewGame();
