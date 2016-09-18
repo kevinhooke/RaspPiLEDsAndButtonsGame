@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package kh.pibuttonsandledsgame;
 
 import java.io.IOException;
@@ -57,7 +52,9 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
     /**
      * Initial delay between colors
      */
-    private static final int INITIAL_DELAY = 2000;
+    private static final int INITIAL_DELAY = 1200;
+    private static final int DELAY_BETWEEN_COLORS = 400;
+    private static final int DEBOUNCE_DELAY = 100;
     private int currentDelay;
 
     private int currentScore = 0;
@@ -154,19 +151,19 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
     public void testLeds(){
         try{
         this.redLed.setValue(true);
-        Thread.sleep(600);
+        Thread.sleep(INITIAL_DELAY);
         this.redLed.setValue(false);
         
         this.greenLed.setValue(true);
-        Thread.sleep(600);
+        Thread.sleep(INITIAL_DELAY);
         this.greenLed.setValue(false);
         
         this.blueLed.setValue(true);
-        Thread.sleep(600);
+        Thread.sleep(INITIAL_DELAY);
         this.blueLed.setValue(false);
         
         this.yellowLed.setValue(true);
-        Thread.sleep(600);
+        Thread.sleep(INITIAL_DELAY);
         this.yellowLed.setValue(false);
         }
         catch(Exception e){
@@ -212,6 +209,15 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
             Logger.getLogger(PiButtonsAndLEDsGame.class.getName()).log(Level.SEVERE, null, ex);
         }
         led.setValue(false);
+        
+        //delay before next color
+        try {
+            Thread.sleep(DELAY_BETWEEN_COLORS);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(PiButtonsAndLEDsGame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+
+        
 
     }
 
@@ -233,6 +239,13 @@ public class PiButtonsAndLEDsGame extends MIDlet implements PinListener {
         } else //check player current turn input
         if (this.waitingForPlayerInput) {
             this.checkCurrentPlayerInput(event.getDevice());
+        }
+        
+        //pause for simple approach to avoid some signal bouncing
+        try {
+            Thread.sleep(DEBOUNCE_DELAY);
+        } catch (InterruptedException ex) {
+            Logger.getLogger(PiButtonsAndLEDsGame.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
